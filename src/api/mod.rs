@@ -108,6 +108,23 @@ pub struct CfDnsRecord {
 fn default_ttl() -> u32 { 1 }
 
 // ============================================================================
+// Pages project types
+// ============================================================================
+
+/// Cloudflare Pages project metadata.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CfPagesProject {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub subdomain: String,
+    #[serde(default)]
+    pub domains: Vec<String>,
+    #[serde(default)]
+    pub production_branch: String,
+}
+
+// ============================================================================
 // Audit types
 // ============================================================================
 
@@ -457,6 +474,50 @@ impl CloudflareClient {
     }
 
     // ========================================================================
+    // Settings patch (for config upload)
+    // ========================================================================
+
+    /// Patch multiple zone settings at once.
+    pub fn patch_zone_settings(&self, zone_id: &str, body: &serde_json::Value) -> Result<(), String> {
+        self.patch(&format!("/zones/{}/settings", zone_id), body)?;
+        Ok(())
+    }
+
+    // ========================================================================
+    // Pages project listing
+    // ========================================================================
+
+    /// List Cloudflare Pages projects for the account.
+    pub fn list_pages_projects(&self) -> Result<Vec<CfPagesProject>, String> {
+        // Try shorthand first, then fall back to looking up account ID.
+        match self.get("/accounts/_/pages/projects") {
+            Ok(body) => {
+                let resp: CfResponse<Vec<CfPagesProject>> = serde_json::from_value(body)
+                    .map_err(|e| format!("Parse error: {}", e))?;
+                Ok(resp.result.unwrap_or_default())
+            }
+            Err(_) => {
+                let zones = self.list_zones()?;
+                if zones.is_empty() {
+                    return Ok(Vec::new());
+                }
+                let zone_body = self.get(&format!("/zones/{}", zones[0].id))?;
+                let account_id = zone_body
+                    .get("result")
+                    .and_then(|r| r.get("account"))
+                    .and_then(|a| a.get("id"))
+                    .and_then(|id| id.as_str())
+                    .ok_or_else(|| "Could not determine account ID".to_string())?;
+
+                let pages_body = self.get(&format!("/accounts/{}/pages/projects", account_id))?;
+                let resp: CfResponse<Vec<CfPagesProject>> = serde_json::from_value(pages_body)
+                    .map_err(|e| format!("Parse error: {}", e))?;
+                Ok(resp.result.unwrap_or_default())
+            }
+        }
+    }
+
+    // ========================================================================
     // Config operations
     // ========================================================================
 
@@ -543,4 +604,9 @@ pub fn audit_settings(
     }
 
     (passed, failed, findings)
+}
+
+/// Expose the hardening policy for use in the diff command.
+pub fn hardening_policy() -> &'static [(&'static str, &'static str, &'static str)] {
+    HARDENING_POLICY
 }

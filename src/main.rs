@@ -378,30 +378,200 @@ fn cmd_sync_download(
     Ok(())
 }
 
-/// Upload local configs to Cloudflare (placeholder).
+/// Upload local configs to Cloudflare with diff preview.
+///
+/// Reads a saved JSON config file, compares each setting against live values,
+/// and (unless --dry-run) patches any differences.
 fn cmd_sync_upload(
-    _client: &api::CloudflareClient,
+    client: &api::CloudflareClient,
     path: &str,
     dry_run: bool,
-    _json_output: bool,
+    json_output: bool,
 ) -> Result<(), String> {
-    println!("Upload from: {} (dry_run: {})", path, dry_run);
-    println!("TODO: Implement config upload with diff preview.");
+    let file_content = std::fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+    let config: serde_json::Value = serde_json::from_str(&file_content)
+        .map_err(|e| format!("Failed to parse JSON from {}: {}", path, e))?;
+
+    let zone_id = config.get("zone_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "Config file missing 'zone_id' field".to_string())?;
+    let domain = config.get("domain")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown");
+
+    // Get live settings for comparison.
+    let live_settings = client.get_zone_settings(zone_id)?;
+
+    let offline_settings = config.get("settings")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "Config file missing 'settings' array".to_string())?;
+
+    let mut diffs = Vec::new();
+
+    for offline in offline_settings {
+        let id = offline.get("id").and_then(|v| v.as_str()).unwrap_or("");
+        let offline_val = offline.get("value");
+        let live = live_settings.iter().find(|s| s.id == id);
+
+        if let (Some(off_v), Some(live_s)) = (offline_val, live) {
+            if off_v != &live_s.value {
+                diffs.push((id.to_string(), off_v.clone(), live_s.value.clone()));
+            }
+        }
+    }
+
+    if json_output {
+        let diff_json: Vec<_> = diffs.iter().map(|(id, offline, live)| {
+            serde_json::json!({
+                "setting_id": id,
+                "offline": offline,
+                "live": live,
+            })
+        }).collect();
+
+        println!("{}", serde_json::json!({
+            "domain": domain,
+            "zone_id": zone_id,
+            "diffs": diff_json,
+            "total_diffs": diffs.len(),
+            "dry_run": dry_run,
+            "applied": !dry_run && !diffs.is_empty(),
+        }));
+    } else {
+        println!("Config upload: {} ({})", domain, zone_id);
+        if diffs.is_empty() {
+            println!("  No differences — live matches offline config.");
+        } else {
+            println!("  {} setting(s) differ:", diffs.len());
+            for (id, offline_val, live_val) in &diffs {
+                println!("    {}: live={} -> offline={}", id, live_val, offline_val);
+            }
+        }
+    }
+
+    if !dry_run && !diffs.is_empty() {
+        let items: Vec<_> = diffs.iter().map(|(id, val, _)| {
+            serde_json::json!({"id": id, "value": val})
+        }).collect();
+        let patch_body = serde_json::json!({"items": items});
+        client.patch_zone_settings(zone_id, &patch_body)?;
+
+        if !json_output {
+            println!("  Applied {} setting changes.", diffs.len());
+        }
+    } else if dry_run && !diffs.is_empty() && !json_output {
+        println!("  [DRY RUN] Use without --dry-run to apply changes.");
+    }
+
     Ok(())
 }
 
-/// Show config drift between offline and live.
+/// Show three-way config drift: offline vs live vs policy.
+///
+/// For each hardening policy setting, compares the live value, the offline
+/// saved value (if a config file exists), and the policy-expected value.
 fn cmd_diff(
-    _client: &api::CloudflareClient,
+    client: &api::CloudflareClient,
     domain: Option<String>,
-    _json_output: bool,
+    json_output: bool,
 ) -> Result<(), String> {
-    match domain {
-        Some(d) => println!("Diff for: {}", d),
-        None => println!("Diff for all domains"),
+    let zones = match domain {
+        Some(ref d) => vec![client.find_zone_by_name(d)?],
+        None => client.list_zones()?,
+    };
+
+    for zone in &zones {
+        let live_settings = client.get_zone_settings(&zone.id)?;
+
+        // Try to load offline config if it exists.
+        let offline_config = load_offline_config(&zone.name);
+
+        let mut entries = Vec::new();
+
+        for &(setting_id, expected, _severity) in api::hardening_policy() {
+            let live_val = live_settings.iter()
+                .find(|s| s.id == setting_id)
+                .map(|s| setting_value_to_string(&s.value))
+                .unwrap_or_else(|| "<missing>".to_string());
+
+            let offline_val = offline_config.as_ref()
+                .and_then(|cfg| cfg.get("settings"))
+                .and_then(|s| s.as_array())
+                .and_then(|arr| arr.iter().find(|s| s.get("id").and_then(|v| v.as_str()) == Some(setting_id)))
+                .and_then(|s| s.get("value"))
+                .map(|v| setting_value_to_string(v))
+                .unwrap_or_else(|| "<no offline>".to_string());
+
+            let policy_val = expected.to_string();
+
+            let live_matches_policy = live_val == policy_val;
+            let live_matches_offline = live_val == offline_val;
+
+            entries.push(serde_json::json!({
+                "setting": setting_id,
+                "live": live_val,
+                "offline": offline_val,
+                "policy": policy_val,
+                "live_matches_policy": live_matches_policy,
+                "live_matches_offline": live_matches_offline,
+            }));
+        }
+
+        if json_output {
+            println!("{}", serde_json::json!({
+                "domain": zone.name,
+                "diffs": entries,
+            }));
+        } else {
+            println!("Three-way diff for: {}", zone.name);
+            println!("{:<25} {:<15} {:<15} {:<15} {}", "Setting", "Live", "Offline", "Policy", "Status");
+            println!("{}", "-".repeat(80));
+
+            for entry in &entries {
+                let setting = entry["setting"].as_str().unwrap_or("");
+                let live = entry["live"].as_str().unwrap_or("");
+                let offline = entry["offline"].as_str().unwrap_or("");
+                let policy = entry["policy"].as_str().unwrap_or("");
+                let matches_policy = entry["live_matches_policy"].as_bool().unwrap_or(false);
+                let matches_offline = entry["live_matches_offline"].as_bool().unwrap_or(false);
+
+                let status = if matches_policy && matches_offline {
+                    "OK"
+                } else if !matches_policy && !matches_offline {
+                    "CONFLICT"
+                } else if !matches_policy {
+                    "DRIFT"
+                } else {
+                    "CHANGED"
+                };
+
+                println!("{:<25} {:<15} {:<15} {:<15} {}", setting, live, offline, policy, status);
+            }
+            println!();
+        }
     }
-    println!("TODO: Implement three-way diff (offline vs live vs policy).");
+
     Ok(())
+}
+
+/// Load an offline config file for a domain (if it exists).
+fn load_offline_config(domain: &str) -> Option<serde_json::Value> {
+    let dir = dirs::config_dir()?.join("cloudguard").join("configs");
+    let filename = domain.replace('.', "_");
+    let path = dir.join(format!("{}.json", filename));
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+/// Convert a serde_json::Value to a comparable string.
+fn setting_value_to_string(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::String(v) => v.clone(),
+        serde_json::Value::Bool(b) => if *b { "on".to_string() } else { "off".to_string() },
+        serde_json::Value::Number(n) => n.to_string(),
+        other => other.to_string(),
+    }
 }
 
 /// List DNS records for a domain.
@@ -573,11 +743,28 @@ fn cmd_zones_status(
     Ok(())
 }
 
-/// List Pages projects (placeholder).
+/// List Cloudflare Pages projects.
 fn cmd_pages_list(
-    _client: &api::CloudflareClient,
-    _json_output: bool,
+    client: &api::CloudflareClient,
+    json_output: bool,
 ) -> Result<(), String> {
-    println!("TODO: Implement Pages project listing.");
+    let projects = client.list_pages_projects()?;
+
+    if json_output {
+        println!("{}", serde_json::to_string_pretty(&projects).unwrap());
+    } else {
+        println!("Pages Projects ({} total)", projects.len());
+        println!("{:<30} {:<40} {:<15} {}", "Name", "Subdomain", "Branch", "Domains");
+        println!("{}", "-".repeat(100));
+        for p in &projects {
+            let domains = if p.domains.is_empty() {
+                "none".to_string()
+            } else {
+                p.domains.join(", ")
+            };
+            println!("{:<30} {:<40} {:<15} {}", p.name, p.subdomain, p.production_branch, domains);
+        }
+    }
+
     Ok(())
 }
