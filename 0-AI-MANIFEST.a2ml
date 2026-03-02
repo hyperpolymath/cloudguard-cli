@@ -1,0 +1,46 @@
+# CloudGuard CLI — AI Manifest
+
+**THIS FILE MUST BE READ FIRST BY ALL AI AGENTS**
+
+## WHAT IS THIS?
+
+CloudGuard CLI is the standalone command-line tool for Cloudflare domain
+security hardening, auditing, and management. It provides the same
+functionality as the PanLL CloudGuard module but without the GUI.
+
+## CANONICAL LOCATIONS
+
+| Content | Location |
+|---------|----------|
+| Machine-readable metadata | `.machine_readable/` ONLY |
+| Rust source | `src/` |
+| API client | `src/api/mod.rs` |
+| CLI entry point | `src/main.rs` |
+| Build config | `Cargo.toml` |
+
+## CRITICAL INVARIANTS
+
+1. **License**: PMPL-1.0-or-later on all original code
+2. **Auth**: CLOUDFLARE_API_TOKEN env var or ~/.config/cloudguard/credentials
+3. **Rate limiting**: 333ms minimum between CF API requests
+4. **No npm/node/bun**: Pure Rust, no JS dependencies
+5. **SCM files**: ONLY in `.machine_readable/`, NEVER in root
+
+## REPOSITORY RELATIONSHIPS
+
+- **Parent module**: `panll/src/core/CloudGuard*` (PanLL GUI module)
+- **Server companion**: `cloudguard-server` (Axum REST/WebSocket API)
+- **Policy files**: Uses same hardening policy as PanLL CloudGuard
+
+## SUBCOMMANDS
+
+```
+cloudguard audit [--domain X] [--output report.json]
+cloudguard harden [--domain X] [--apply] [--dry-run]
+cloudguard sync download [--dir ./configs] [--domain X]
+cloudguard sync upload <path> [--dry-run]
+cloudguard diff [--domain X]
+cloudguard dns list|add|delete|bulk-add
+cloudguard zones list|status
+cloudguard pages list
+```
