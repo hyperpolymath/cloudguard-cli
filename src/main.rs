@@ -19,6 +19,7 @@
 //! Authentication: `CLOUDFLARE_API_TOKEN` environment variable, or
 //! `~/.config/cloudguard/credentials` file.
 
+#![forbid(unsafe_code)]
 mod api;
 
 use clap::{Parser, Subcommand};
