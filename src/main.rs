@@ -20,7 +20,7 @@
 //! `~/.config/cloudguard/credentials` file.
 
 #![forbid(unsafe_code)]
-mod api;
+use cloudguard_cli::api;
 
 use clap::{Parser, Subcommand};
 
