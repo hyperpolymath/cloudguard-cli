@@ -311,7 +311,7 @@ impl CloudflareClient {
 
     /// Enforce 333ms minimum between requests.
     fn rate_limit(&self) {
-        let mut last = LAST_REQUEST.lock().unwrap();
+        let mut last = LAST_REQUEST.lock().expect("TODO: handle error");
         let elapsed = last.elapsed();
         let min_interval = Duration::from_millis(RATE_LIMIT_MS);
         if elapsed < min_interval {
@@ -545,7 +545,7 @@ impl CloudflareClient {
         let filename = domain.replace('.', "_");
         let path = dir.join(format!("{}.json", filename));
 
-        std::fs::write(&path, serde_json::to_string_pretty(&config).unwrap())
+        std::fs::write(&path, serde_json::to_string_pretty(&config).expect("TODO: handle error"))
             .map_err(|e| format!("Failed to write config: {}", e))?;
 
         Ok(path.to_string_lossy().to_string())
