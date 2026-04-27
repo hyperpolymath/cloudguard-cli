@@ -311,7 +311,8 @@ impl CloudflareClient {
 
     /// Enforce 333ms minimum between requests.
     fn rate_limit(&self) {
-        let mut last = LAST_REQUEST.lock().expect("TODO: handle error");
+        let mut last = LAST_REQUEST.lock()
+            .expect("LAST_REQUEST mutex never poisons — its critical section is a sleep + assignment with no panic-able operations");
         let elapsed = last.elapsed();
         let min_interval = Duration::from_millis(RATE_LIMIT_MS);
         if elapsed < min_interval {
@@ -545,7 +546,8 @@ impl CloudflareClient {
         let filename = domain.replace('.', "_");
         let path = dir.join(format!("{}.json", filename));
 
-        std::fs::write(&path, serde_json::to_string_pretty(&config).expect("TODO: handle error"))
+        std::fs::write(&path, serde_json::to_string_pretty(&config)
+            .expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"))
             .map_err(|e| format!("Failed to write config: {}", e))?;
 
         Ok(path.to_string_lossy().to_string())

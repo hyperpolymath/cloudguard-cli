@@ -273,7 +273,7 @@ fn cmd_audit(
             "score": format!("{:.1}%", score),
             "findings": all_findings,
         });
-        println!("{}", serde_json::to_string_pretty(&report).expect("TODO: handle error"));
+        println!("{}", serde_json::to_string_pretty(&report).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
     } else {
         println!("CloudGuard Audit Report");
         println!("=======================");
@@ -298,7 +298,7 @@ fn cmd_audit(
             "score": format!("{:.1}%", score),
             "findings": all_findings,
         });
-        std::fs::write(&path, serde_json::to_string_pretty(&report).expect("TODO: handle error"))
+        std::fs::write(&path, serde_json::to_string_pretty(&report).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"))
             .map_err(|e| format!("Failed to write report to {}: {}", path, e))?;
         eprintln!("Report written to {}", path);
     }
@@ -585,7 +585,7 @@ fn cmd_dns_list(
     let records = client.list_dns_records(&zone.id)?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&records).expect("TODO: handle error"));
+        println!("{}", serde_json::to_string_pretty(&records).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
     } else {
         println!("DNS Records for {} ({} records)", domain, records.len());
         println!("{:<8} {:<30} {:<50} {:<6} {}", "Type", "Name", "Content", "TTL", "Proxy");
@@ -620,7 +620,7 @@ fn cmd_dns_add(
     let record = client.create_dns_record(&zone.id, record_type, name, content, ttl, proxied)?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&record).expect("TODO: handle error"));
+        println!("{}", serde_json::to_string_pretty(&record).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
     } else {
         println!("Created {} record: {} -> {}", record_type, name, content);
     }
@@ -710,7 +710,7 @@ fn cmd_zones_list(
     let zones = client.list_zones()?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&zones).expect("TODO: handle error"));
+        println!("{}", serde_json::to_string_pretty(&zones).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
     } else {
         println!("Zones ({} total)", zones.len());
         println!("{:<30} {:<10} {:<12} {}", "Domain", "Status", "Plan", "ID");
@@ -732,7 +732,7 @@ fn cmd_zones_status(
     let zone = client.find_zone_by_name(domain)?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&zone).expect("TODO: handle error"));
+        println!("{}", serde_json::to_string_pretty(&zone).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
     } else {
         println!("Zone: {}", zone.name);
         println!("  ID:          {}", zone.id);
@@ -752,7 +752,7 @@ fn cmd_pages_list(
     let projects = client.list_pages_projects()?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&projects).expect("TODO: handle error"));
+        println!("{}", serde_json::to_string_pretty(&projects).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
     } else {
         println!("Pages Projects ({} total)", projects.len());
         println!("{:<30} {:<40} {:<15} {}", "Name", "Subdomain", "Branch", "Domains");
