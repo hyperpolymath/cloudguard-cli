@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2024-2026 Jonathan D.A. Jewell (hyperpolymath)
 
 # CloudGuard CLI — AI Manifest
@@ -23,7 +23,7 @@ functionality as the PanLL CloudGuard module but without the GUI.
 
 ## CRITICAL INVARIANTS
 
-1. **License**: PMPL-1.0-or-later on all original code
+1. **License**: MPL-2.0 on all original code
 2. **Auth**: CLOUDFLARE_API_TOKEN env var or ~/.config/cloudguard/credentials
 3. **Rate limiting**: 333ms minimum between CF API requests
 4. **No npm/node/bun**: Pure Rust, no JS dependencies
