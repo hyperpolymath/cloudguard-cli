@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 //! CloudGuard CLI — Cloudflare domain security hardening, auditing, and management.
 //!
 //! Standalone command-line tool for managing Cloudflare domain security without

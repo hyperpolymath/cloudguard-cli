@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 //! Cloudflare API client for the CloudGuard CLI.
 //!
 //! Rate-limited reqwest::blocking client that wraps the CF v4 API.
