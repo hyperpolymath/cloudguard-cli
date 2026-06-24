@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 <!-- Replace CLOUDGUARD_CLI with your project name -->
 
 # CLOUDGUARD_CLI Component Readiness Assessment
