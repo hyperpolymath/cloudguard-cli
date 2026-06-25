@@ -1,56 +1,54 @@
-[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/hyperpolymath)
-
-// SPDX-License-Identifier: CC-BY-SA-4.0
-
-= CloudGuard CLI
-:toc: macro
-:toc-title: Contents
-:toclevels: 2
+<!--
+SPDX-License-Identifier: CC-BY-SA-4.0
+SPDX-FileCopyrightText: 2025-2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 
 Standalone command-line tool for Cloudflare domain security management.
-Audit compliance, apply hardening, manage DNS records, sync offline configs,
-and manage Cloudflare Pages projects — all from the terminal.
+Audit compliance, apply hardening, manage DNS records, sync offline
+configs, and manage Cloudflare Pages projects — all from the terminal.
 
-toc::[]
+<div id="toc">
 
-== Overview
+</div>
+
+# Overview
 
 CloudGuard CLI automates the tedious, error-prone process of hardening
-Cloudflare domains. Instead of manually toggling dozens of settings across
-dozens of domains, run a single command to audit or harden everything.
+Cloudflare domains. Instead of manually toggling dozens of settings
+across dozens of domains, run a single command to audit or harden
+everything.
 
 Companion projects:
 
-* **cloudguard-server** — REST + WebSocket API for dashboards and CI/CD
-* **PanLL CloudGuard module** — GUI panel with three-panel compliance view
+- **cloudguard-server** — REST + WebSocket API for dashboards and CI/CD
 
-== Installation
+- **PanLL CloudGuard module** — GUI panel with three-panel compliance
+  view
 
-=== From source
+# Installation
 
-[source,bash]
-----
+## From source
+
+```bash
 git clone https://github.com/hyperpolymath/cloudguard-cli
 cd cloudguard-cli
 cargo build --release
 # Binary at target/release/cloudguard-cli
-----
+```
 
-=== Environment
+## Environment
 
 Set your Cloudflare API token:
 
-[source,bash]
-----
+```bash
 export CLOUDFLARE_API_TOKEN="your-token-here"
-----
+```
 
-== Usage
+# Usage
 
-=== Audit domains against security policy
+## Audit domains against security policy
 
-[source,bash]
-----
+```bash
 # Audit all domains
 cloudguard-cli audit
 
@@ -59,12 +57,11 @@ cloudguard-cli audit --domain example.com
 
 # Output JSON report
 cloudguard-cli audit --output report.json
-----
+```
 
-=== Apply hardening settings
+## Apply hardening settings
 
-[source,bash]
-----
+```bash
 # Harden all domains (dry run)
 cloudguard-cli harden --dry-run
 
@@ -73,12 +70,11 @@ cloudguard-cli harden --domain example.com --apply
 
 # Harden all domains
 cloudguard-cli harden --apply
-----
+```
 
-=== DNS management
+## DNS management
 
-[source,bash]
-----
+```bash
 # List DNS records
 cloudguard-cli dns list --domain example.com
 
@@ -90,68 +86,48 @@ cloudguard-cli dns bulk-add --domain example.com
 
 # Delete a record
 cloudguard-cli dns delete --domain example.com --record-id abc123
-----
+```
 
-=== Offline config sync
+## Offline config sync
 
-[source,bash]
-----
+```bash
 # Download configs locally
 cloudguard-cli sync download --dir ./configs
 
 # Upload local changes (dry run)
 cloudguard-cli sync upload ./configs --dry-run
-----
+```
 
-=== Zone management
+## Zone management
 
-[source,bash]
-----
+```bash
 # List all zones
 cloudguard-cli zones list
 
 # Check zone status
 cloudguard-cli zones status --domain example.com
-----
+```
 
-=== Pages projects
+## Pages projects
 
-[source,bash]
-----
+```bash
 # List Pages projects
 cloudguard-cli pages list
-----
+```
 
-== Hardening Policy
+# Hardening Policy
 
 CloudGuard applies 16 security settings across these categories:
 
-[cols="1,2,1"]
-|===
-| Category | Settings | Severity
+| Category | Settings | Severity |
+|----|----|----|
+| SSL/TLS | Full strict mode, TLS 1.2 minimum, always HTTPS, auto rewrites, opportunistic encryption, TLS 1.3 | CRITICAL–LOW |
+| Security Headers | HSTS with preload, subdomains, nosniff | HIGH |
+| WAF & Bot Defense | Browser check, hotlink protection, email obfuscation, security level | MEDIUM–LOW |
+| Performance | Brotli, early hints, HTTP/3 | LOW |
+| Network | WebSockets, opportunistic onion | LOW |
 
-| SSL/TLS
-| Full strict mode, TLS 1.2 minimum, always HTTPS, auto rewrites, opportunistic encryption, TLS 1.3
-| CRITICAL–LOW
-
-| Security Headers
-| HSTS with preload, subdomains, nosniff
-| HIGH
-
-| WAF & Bot Defense
-| Browser check, hotlink protection, email obfuscation, security level
-| MEDIUM–LOW
-
-| Performance
-| Brotli, early hints, HTTP/3
-| LOW
-
-| Network
-| WebSockets, opportunistic onion
-| LOW
-|===
-
-== License
+# License
 
 MPL-2.0
 
