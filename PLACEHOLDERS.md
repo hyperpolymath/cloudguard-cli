@@ -47,8 +47,8 @@ sed -i "s/2026-03-02/$(date +%Y-%m-%d)/g" $(grep -rl '2026-03-02' .)
 
 | Placeholder | Description | Example | Files |
 |---|---|---|---|
-| `cloudguard-cli` | Human-readable project name | `My Project` | SECURITY.md, CODE_OF_CONDUCT.md, TOPOLOGY.md, STATE.a2ml, Justfile, GOVERNANCE.md, MAINTAINERS.md, flake.nix, devcontainer.json |
-| `CloudGuard CLI — standalone Cloudflare domain security management tool` | One-line description | `A tool for X` | flake.nix |
+| `cloudguard-cli` | Human-readable project name | `My Project` | SECURITY.md, CODE_OF_CONDUCT.md, TOPOLOGY.md, STATE.a2ml, Justfile, GOVERNANCE.md, MAINTAINERS.md, flake.guix, devcontainer.json |
+| `CloudGuard CLI — standalone Cloudflare domain security management tool` | One-line description | `A tool for X` | flake.guix |
 | `CLOUDGUARD_CLI` | Uppercase identifier (for Idris2 modules, C macros) | `MY_PROJECT` | ABI-FFI-README.md, src/abi/*.idr, ffi/zig/*.zig |
 | `cloudguard_cli` | Lowercase identifier (for C symbols, filenames) | `my_project` | ABI-FFI-README.md, ffi/zig/*.zig |
 | `cloudguard-cli` | Repository name (slug) | `my-project` | CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, cliff.toml |
@@ -132,7 +132,7 @@ After replacing all placeholders, verify none remain:
 ```bash
 grep -rn '{{' . --include='*.md' --include='*.adoc' --include='*.a2ml' \
   --include='*.scm' --include='*.idr' --include='*.zig' --include='*.res' \
-  --include='Justfile' --include='*.nix' --include='*.toml' --include='*.yml' \
+  --include='Justfile' --include='*.guix' --include='*.toml' --include='*.yml' \
   --include='*.yaml' --include='*.hs' --include='*.ncl' --include='*.txt' \
   --include='*.json' --include='Containerfile' --include='dep5' \
   | grep -v 'PLACEHOLDERS.md' | grep -v 'node_modules'
