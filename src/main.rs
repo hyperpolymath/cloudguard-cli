@@ -197,19 +197,39 @@ fn main() {
 
     let result = match cli.command {
         Commands::Audit { domain, output } => cmd_audit(&client, domain, output, json_output),
-        Commands::Harden { domain, apply, dry_run } => {
-            cmd_harden(&client, domain, apply || !dry_run, json_output)
-        }
+        Commands::Harden {
+            domain,
+            apply,
+            dry_run,
+        } => cmd_harden(&client, domain, apply || !dry_run, json_output),
         Commands::Sync { action } => match action {
-            SyncAction::Download { dir, domain } => cmd_sync_download(&client, dir, domain, json_output),
-            SyncAction::Upload { path, dry_run } => cmd_sync_upload(&client, &path, dry_run, json_output),
+            SyncAction::Download { dir, domain } => {
+                cmd_sync_download(&client, dir, domain, json_output)
+            }
+            SyncAction::Upload { path, dry_run } => {
+                cmd_sync_upload(&client, &path, dry_run, json_output)
+            }
         },
         Commands::Diff { domain } => cmd_diff(&client, domain, json_output),
         Commands::Dns { action } => match action {
             DnsAction::List { domain } => cmd_dns_list(&client, &domain, json_output),
-            DnsAction::Add { domain, record_type, name, content, ttl, proxied } => {
-                cmd_dns_add(&client, &domain, &record_type, &name, &content, ttl, proxied, json_output)
-            }
+            DnsAction::Add {
+                domain,
+                record_type,
+                name,
+                content,
+                ttl,
+                proxied,
+            } => cmd_dns_add(
+                &client,
+                &domain,
+                &record_type,
+                &name,
+                &content,
+                ttl,
+                proxied,
+                json_output,
+            ),
             DnsAction::Delete { domain, record_id } => {
                 cmd_dns_delete(&client, &domain, &record_id, json_output)
             }
@@ -273,17 +293,34 @@ fn cmd_audit(
             "score": format!("{:.1}%", score),
             "findings": all_findings,
         });
-        println!("{}", serde_json::to_string_pretty(&report).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"
+            )
+        );
     } else {
         println!("CloudGuard Audit Report");
         println!("=======================");
-        println!("Domains: {}", zones.iter().map(|z| z.name.as_str()).collect::<Vec<_>>().join(", "));
-        println!("Score: {:.1}% ({} passed, {} failed)", score, total_passed, total_failed);
+        println!(
+            "Domains: {}",
+            zones
+                .iter()
+                .map(|z| z.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        println!(
+            "Score: {:.1}% ({} passed, {} failed)",
+            score, total_passed, total_failed
+        );
         if !all_findings.is_empty() {
             println!("\nFindings:");
             for f in &all_findings {
-                println!("  [{}] {}: {} (expected {}, got {})",
-                    f.severity, f.domain, f.setting_id, f.expected, f.actual);
+                println!(
+                    "  [{}] {}: {} (expected {}, got {})",
+                    f.severity, f.domain, f.setting_id, f.expected, f.actual
+                );
             }
         } else {
             println!("\nAll settings match policy. No findings.");
@@ -298,8 +335,13 @@ fn cmd_audit(
             "score": format!("{:.1}%", score),
             "findings": all_findings,
         });
-        std::fs::write(&path, serde_json::to_string_pretty(&report).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"))
-            .map_err(|e| format!("Failed to write report to {}: {}", path, e))?;
+        std::fs::write(
+            &path,
+            serde_json::to_string_pretty(&report).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)",
+            ),
+        )
+        .map_err(|e| format!("Failed to write report to {}: {}", path, e))?;
         eprintln!("Report written to {}", path);
     }
 
@@ -326,11 +368,14 @@ fn cmd_harden(
         if apply {
             let count = client.harden_zone(&zone.id)?;
             if json_output {
-                println!("{}", serde_json::json!({
-                    "domain": zone.name,
-                    "status": "hardened",
-                    "settings_updated": count,
-                }));
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "domain": zone.name,
+                        "status": "hardened",
+                        "settings_updated": count,
+                    })
+                );
             } else {
                 println!("  {} settings applied.", count);
             }
@@ -339,11 +384,14 @@ fn cmd_harden(
                 println!("  [DRY RUN] Would apply 17 hardening settings.");
                 println!("  Use --apply to actually apply changes.");
             } else {
-                println!("{}", serde_json::json!({
-                    "domain": zone.name,
-                    "status": "dry_run",
-                    "settings_would_update": 17,
-                }));
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "domain": zone.name,
+                        "status": "dry_run",
+                        "settings_would_update": 17,
+                    })
+                );
             }
         }
     }
@@ -366,11 +414,14 @@ fn cmd_sync_download(
     for zone in &zones {
         let path = client.download_config(&zone.id, &zone.name)?;
         if json_output {
-            println!("{}", serde_json::json!({
-                "domain": zone.name,
-                "path": path,
-                "status": "downloaded",
-            }));
+            println!(
+                "{}",
+                serde_json::json!({
+                    "domain": zone.name,
+                    "path": path,
+                    "status": "downloaded",
+                })
+            );
         } else {
             println!("Downloaded: {} -> {}", zone.name, path);
         }
@@ -389,22 +440,25 @@ fn cmd_sync_upload(
     dry_run: bool,
     json_output: bool,
 ) -> Result<(), String> {
-    let file_content = std::fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+    let file_content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
     let config: serde_json::Value = serde_json::from_str(&file_content)
         .map_err(|e| format!("Failed to parse JSON from {}: {}", path, e))?;
 
-    let zone_id = config.get("zone_id")
+    let zone_id = config
+        .get("zone_id")
         .and_then(|v| v.as_str())
         .ok_or_else(|| "Config file missing 'zone_id' field".to_string())?;
-    let domain = config.get("domain")
+    let domain = config
+        .get("domain")
         .and_then(|v| v.as_str())
         .unwrap_or("unknown");
 
     // Get live settings for comparison.
     let live_settings = client.get_zone_settings(zone_id)?;
 
-    let offline_settings = config.get("settings")
+    let offline_settings = config
+        .get("settings")
         .and_then(|v| v.as_array())
         .ok_or_else(|| "Config file missing 'settings' array".to_string())?;
 
@@ -423,22 +477,28 @@ fn cmd_sync_upload(
     }
 
     if json_output {
-        let diff_json: Vec<_> = diffs.iter().map(|(id, offline, live)| {
-            serde_json::json!({
-                "setting_id": id,
-                "offline": offline,
-                "live": live,
+        let diff_json: Vec<_> = diffs
+            .iter()
+            .map(|(id, offline, live)| {
+                serde_json::json!({
+                    "setting_id": id,
+                    "offline": offline,
+                    "live": live,
+                })
             })
-        }).collect();
+            .collect();
 
-        println!("{}", serde_json::json!({
-            "domain": domain,
-            "zone_id": zone_id,
-            "diffs": diff_json,
-            "total_diffs": diffs.len(),
-            "dry_run": dry_run,
-            "applied": !dry_run && !diffs.is_empty(),
-        }));
+        println!(
+            "{}",
+            serde_json::json!({
+                "domain": domain,
+                "zone_id": zone_id,
+                "diffs": diff_json,
+                "total_diffs": diffs.len(),
+                "dry_run": dry_run,
+                "applied": !dry_run && !diffs.is_empty(),
+            })
+        );
     } else {
         println!("Config upload: {} ({})", domain, zone_id);
         if diffs.is_empty() {
@@ -452,9 +512,10 @@ fn cmd_sync_upload(
     }
 
     if !dry_run && !diffs.is_empty() {
-        let items: Vec<_> = diffs.iter().map(|(id, val, _)| {
-            serde_json::json!({"id": id, "value": val})
-        }).collect();
+        let items: Vec<_> = diffs
+            .iter()
+            .map(|(id, val, _)| serde_json::json!({"id": id, "value": val}))
+            .collect();
         let patch_body = serde_json::json!({"items": items});
         client.patch_zone_settings(zone_id, &patch_body)?;
 
@@ -491,15 +552,20 @@ fn cmd_diff(
         let mut entries = Vec::new();
 
         for &(setting_id, expected, _severity) in api::hardening_policy() {
-            let live_val = live_settings.iter()
+            let live_val = live_settings
+                .iter()
                 .find(|s| s.id == setting_id)
                 .map(|s| setting_value_to_string(&s.value))
                 .unwrap_or_else(|| "<missing>".to_string());
 
-            let offline_val = offline_config.as_ref()
+            let offline_val = offline_config
+                .as_ref()
                 .and_then(|cfg| cfg.get("settings"))
                 .and_then(|s| s.as_array())
-                .and_then(|arr| arr.iter().find(|s| s.get("id").and_then(|v| v.as_str()) == Some(setting_id)))
+                .and_then(|arr| {
+                    arr.iter()
+                        .find(|s| s.get("id").and_then(|v| v.as_str()) == Some(setting_id))
+                })
                 .and_then(|s| s.get("value"))
                 .map(|v| setting_value_to_string(v))
                 .unwrap_or_else(|| "<no offline>".to_string());
@@ -520,13 +586,19 @@ fn cmd_diff(
         }
 
         if json_output {
-            println!("{}", serde_json::json!({
-                "domain": zone.name,
-                "diffs": entries,
-            }));
+            println!(
+                "{}",
+                serde_json::json!({
+                    "domain": zone.name,
+                    "diffs": entries,
+                })
+            );
         } else {
             println!("Three-way diff for: {}", zone.name);
-            println!("{:<25} {:<15} {:<15} {:<15} {}", "Setting", "Live", "Offline", "Policy", "Status");
+            println!(
+                "{:<25} {:<15} {:<15} {:<15} {}",
+                "Setting", "Live", "Offline", "Policy", "Status"
+            );
             println!("{}", "-".repeat(80));
 
             for entry in &entries {
@@ -547,7 +619,10 @@ fn cmd_diff(
                     "CHANGED"
                 };
 
-                println!("{:<25} {:<15} {:<15} {:<15} {}", setting, live, offline, policy, status);
+                println!(
+                    "{:<25} {:<15} {:<15} {:<15} {}",
+                    setting, live, offline, policy, status
+                );
             }
             println!();
         }
@@ -569,7 +644,13 @@ fn load_offline_config(domain: &str) -> Option<serde_json::Value> {
 fn setting_value_to_string(value: &serde_json::Value) -> String {
     match value {
         serde_json::Value::String(v) => v.clone(),
-        serde_json::Value::Bool(b) => if *b { "on".to_string() } else { "off".to_string() },
+        serde_json::Value::Bool(b) => {
+            if *b {
+                "on".to_string()
+            } else {
+                "off".to_string()
+            }
+        }
         serde_json::Value::Number(n) => n.to_string(),
         other => other.to_string(),
     }
@@ -585,20 +666,39 @@ fn cmd_dns_list(
     let records = client.list_dns_records(&zone.id)?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&records).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&records).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"
+            )
+        );
     } else {
         println!("DNS Records for {} ({} records)", domain, records.len());
-        println!("{:<8} {:<30} {:<50} {:<6} {}", "Type", "Name", "Content", "TTL", "Proxy");
+        println!(
+            "{:<8} {:<30} {:<50} {:<6} {}",
+            "Type", "Name", "Content", "TTL", "Proxy"
+        );
         println!("{}", "-".repeat(100));
         for r in &records {
-            let ttl_str = if r.ttl == 1 { "Auto".to_string() } else { r.ttl.to_string() };
-            let proxy_str = if r.proxied.unwrap_or(false) { "ON" } else { "--" };
+            let ttl_str = if r.ttl == 1 {
+                "Auto".to_string()
+            } else {
+                r.ttl.to_string()
+            };
+            let proxy_str = if r.proxied.unwrap_or(false) {
+                "ON"
+            } else {
+                "--"
+            };
             let content_display = if r.content.len() > 48 {
                 format!("{}...", &r.content[..48])
             } else {
                 r.content.clone()
             };
-            println!("{:<8} {:<30} {:<50} {:<6} {}", r.record_type, r.name, content_display, ttl_str, proxy_str);
+            println!(
+                "{:<8} {:<30} {:<50} {:<6} {}",
+                r.record_type, r.name, content_display, ttl_str, proxy_str
+            );
         }
     }
 
@@ -620,7 +720,12 @@ fn cmd_dns_add(
     let record = client.create_dns_record(&zone.id, record_type, name, content, ttl, proxied)?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&record).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&record).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"
+            )
+        );
     } else {
         println!("Created {} record: {} -> {}", record_type, name, content);
     }
@@ -639,11 +744,14 @@ fn cmd_dns_delete(
     client.delete_dns_record(&zone.id, record_id)?;
 
     if json_output {
-        println!("{}", serde_json::json!({
-            "domain": domain,
-            "record_id": record_id,
-            "status": "deleted",
-        }));
+        println!(
+            "{}",
+            serde_json::json!({
+                "domain": domain,
+                "record_id": record_id,
+                "status": "deleted",
+            })
+        );
     } else {
         println!("Deleted record {} from {}", record_id, domain);
     }
@@ -666,9 +774,19 @@ fn cmd_dns_bulk_add(
 
     let templates: Vec<(&str, &str, &str, &str)> = vec![
         ("TXT", domain, "v=spf1 -all", "SPF deny-all"),
-        ("TXT", &dmarc_name, "v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; pct=100; fo=1", "DMARC reject"),
+        (
+            "TXT",
+            &dmarc_name,
+            "v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; pct=100; fo=1",
+            "DMARC reject",
+        ),
         ("TXT", &dkim_name, "v=DKIM1; p=", "DKIM revocation"),
-        ("CAA", domain, "0 issue \"letsencrypt.org\"", "CAA Let's Encrypt"),
+        (
+            "CAA",
+            domain,
+            "0 issue \"letsencrypt.org\"",
+            "CAA Let's Encrypt",
+        ),
         ("TXT", &tlsrpt_name, &tlsrpt_content, "TLS-RPT"),
     ];
 
@@ -690,33 +808,46 @@ fn cmd_dns_bulk_add(
     }
 
     if json_output {
-        println!("{}", serde_json::json!({
-            "domain": domain,
-            "created": created,
-            "total": templates.len(),
-        }));
+        println!(
+            "{}",
+            serde_json::json!({
+                "domain": domain,
+                "created": created,
+                "total": templates.len(),
+            })
+        );
     } else {
-        println!("Created {}/{} security records for {}", created, templates.len(), domain);
+        println!(
+            "Created {}/{} security records for {}",
+            created,
+            templates.len(),
+            domain
+        );
     }
 
     Ok(())
 }
 
 /// List all zones.
-fn cmd_zones_list(
-    client: &api::CloudflareClient,
-    json_output: bool,
-) -> Result<(), String> {
+fn cmd_zones_list(client: &api::CloudflareClient, json_output: bool) -> Result<(), String> {
     let zones = client.list_zones()?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&zones).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&zones).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"
+            )
+        );
     } else {
         println!("Zones ({} total)", zones.len());
         println!("{:<30} {:<10} {:<12} {}", "Domain", "Status", "Plan", "ID");
         println!("{}", "-".repeat(80));
         for z in &zones {
-            println!("{:<30} {:<10} {:<12} {}", z.name, z.status, z.plan.name, z.id);
+            println!(
+                "{:<30} {:<10} {:<12} {}",
+                z.name, z.status, z.plan.name, z.id
+            );
         }
     }
 
@@ -732,7 +863,12 @@ fn cmd_zones_status(
     let zone = client.find_zone_by_name(domain)?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&zone).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&zone).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"
+            )
+        );
     } else {
         println!("Zone: {}", zone.name);
         println!("  ID:          {}", zone.id);
@@ -745,17 +881,22 @@ fn cmd_zones_status(
 }
 
 /// List Cloudflare Pages projects.
-fn cmd_pages_list(
-    client: &api::CloudflareClient,
-    json_output: bool,
-) -> Result<(), String> {
+fn cmd_pages_list(client: &api::CloudflareClient, json_output: bool) -> Result<(), String> {
     let projects = client.list_pages_projects()?;
 
     if json_output {
-        println!("{}", serde_json::to_string_pretty(&projects).expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&projects).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"
+            )
+        );
     } else {
         println!("Pages Projects ({} total)", projects.len());
-        println!("{:<30} {:<40} {:<15} {}", "Name", "Subdomain", "Branch", "Domains");
+        println!(
+            "{:<30} {:<40} {:<15} {}",
+            "Name", "Subdomain", "Branch", "Domains"
+        );
         println!("{}", "-".repeat(100));
         for p in &projects {
             let domains = if p.domains.is_empty() {
@@ -763,7 +904,10 @@ fn cmd_pages_list(
             } else {
                 p.domains.join(", ")
             };
-            println!("{:<30} {:<40} {:<15} {}", p.name, p.subdomain, p.production_branch, domains);
+            println!(
+                "{:<30} {:<40} {:<15} {}",
+                p.name, p.subdomain, p.production_branch, domains
+            );
         }
     }
 
