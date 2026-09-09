@@ -1,0 +1,4 @@
+# Clean file with only normal whitespace
+This file is clean.
+It has spaces, tabs	, and newlines.
+But no invisible characters or BOM.

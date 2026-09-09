@@ -52,3 +52,6 @@ Containerfile  text eol=lf
 # Lock files
 Cargo.lock  text eol=lf -diff
 flake.lock  text eol=lf -diff
+
+# Test fixtures for byte detection - preserve as-is (binary)
+tests/fixtures/byte_detection/*.txt binary

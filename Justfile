@@ -326,6 +326,11 @@ test-smoke:
     @echo "Smoke test..."
     # TODO: Add basic sanity checks
 
+# Run byte detection test suite
+test-byte-detection:
+    @echo "Running byte detection tests..."
+    @bash tests/test_byte_detection.sh
+
 # Run all quality checks
 quality: fmt-check lint test
     @echo "All quality checks passed!"
