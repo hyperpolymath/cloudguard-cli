@@ -135,7 +135,10 @@ fn audit_settings_all_pass_returns_zero_failures() {
 
     let (passed, failed, findings) = audit_settings("example.com", &settings);
 
-    assert_eq!(failed, 0, "expected no failures when all settings match policy");
+    assert_eq!(
+        failed, 0,
+        "expected no failures when all settings match policy"
+    );
     assert!(findings.is_empty(), "expected no findings");
     assert_eq!(passed, hardening_policy().len());
 }
@@ -157,7 +160,10 @@ fn audit_settings_all_fail_returns_full_finding_list() {
 
     let (passed, failed, findings) = audit_settings("bad.example", &settings);
 
-    assert_eq!(passed, 0, "expected zero passes when all settings are wrong");
+    assert_eq!(
+        passed, 0,
+        "expected zero passes when all settings are wrong"
+    );
     assert_eq!(failed, hardening_policy().len());
     assert_eq!(findings.len(), hardening_policy().len());
 
@@ -231,7 +237,10 @@ fn hardening_policy_entries_are_well_formed() {
 
     for &(id, expected, severity) in policy {
         assert!(!id.is_empty(), "policy setting id must not be empty");
-        assert!(!expected.is_empty(), "policy expected value must not be empty");
+        assert!(
+            !expected.is_empty(),
+            "policy expected value must not be empty"
+        );
         assert!(
             matches!(severity, "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"),
             "severity must be one of CRITICAL/HIGH/MEDIUM/LOW, got: {}",
@@ -246,15 +255,14 @@ fn hardening_policy_entries_are_well_formed() {
 fn hardening_policy_includes_critical_tls_settings() {
     let policy = hardening_policy();
 
-    let has_ssl = policy.iter().any(|&(id, _, sev)| id == "ssl" && sev == "CRITICAL");
+    let has_ssl = policy
+        .iter()
+        .any(|&(id, _, sev)| id == "ssl" && sev == "CRITICAL");
     let has_always_https = policy
         .iter()
         .any(|&(id, _, sev)| id == "always_use_https" && sev == "CRITICAL");
 
-    assert!(
-        has_ssl,
-        "policy must include a CRITICAL ssl setting"
-    );
+    assert!(has_ssl, "policy must include a CRITICAL ssl setting");
     assert!(
         has_always_https,
         "policy must include a CRITICAL always_use_https setting"

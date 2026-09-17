@@ -8,8 +8,8 @@
 //! - `audit_settings()` — full compliance scan over a mock settings payload
 //! - Policy table iteration throughput at varying setting counts
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use cloudguard_cli::api::{audit_settings, hardening_policy, AuditFinding, CfSetting};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 // ============================================================================
 // Helpers — construct representative Cloudflare setting payloads
@@ -77,7 +77,12 @@ fn bench_hardening_policy(c: &mut Criterion) {
 fn bench_audit_all_pass(c: &mut Criterion) {
     let settings = make_compliant_settings();
     c.bench_function("audit_settings_all_pass", |b| {
-        b.iter(|| black_box(audit_settings(black_box("example.com"), black_box(&settings))))
+        b.iter(|| {
+            black_box(audit_settings(
+                black_box("example.com"),
+                black_box(&settings),
+            ))
+        })
     });
 }
 
@@ -87,7 +92,12 @@ fn bench_audit_all_pass(c: &mut Criterion) {
 fn bench_audit_all_fail(c: &mut Criterion) {
     let settings = make_noncompliant_settings();
     c.bench_function("audit_settings_all_fail", |b| {
-        b.iter(|| black_box(audit_settings(black_box("example.com"), black_box(&settings))))
+        b.iter(|| {
+            black_box(audit_settings(
+                black_box("example.com"),
+                black_box(&settings),
+            ))
+        })
     });
 }
 
@@ -101,7 +111,12 @@ fn bench_audit_scaling(c: &mut Criterion) {
     for n in [4, 8, 16, policy_size] {
         let settings = make_settings_n(n);
         group.bench_with_input(BenchmarkId::from_parameter(n), &n, |b, _| {
-            b.iter(|| black_box(audit_settings(black_box("bench.example.com"), black_box(&settings))))
+            b.iter(|| {
+                black_box(audit_settings(
+                    black_box("bench.example.com"),
+                    black_box(&settings),
+                ))
+            })
         });
     }
     group.finish();

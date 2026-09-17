@@ -17,7 +17,8 @@ use serde::{Deserialize, Serialize};
 const RATE_LIMIT_MS: u64 = 333;
 
 /// Last request timestamp for rate limiting.
-static LAST_REQUEST: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now() - Duration::from_secs(1)));
+static LAST_REQUEST: Lazy<Mutex<Instant>> =
+    Lazy::new(|| Mutex::new(Instant::now() - Duration::from_secs(1)));
 
 /// CF API base URL.
 const CF_API: &str = "https://api.cloudflare.com/client/v4";
@@ -105,7 +106,9 @@ pub struct CfDnsRecord {
     pub comment: Option<String>,
 }
 
-fn default_ttl() -> u32 { 1 }
+fn default_ttl() -> u32 {
+    1
+}
 
 // ============================================================================
 // Pages project types
@@ -162,7 +165,6 @@ const HARDENING_POLICY: &[(&str, &str, &str)] = &[
     ("ip_geolocation", "on", "LOW"),
 ];
 
-
 // ============================================================================
 // Client
 // ============================================================================
@@ -206,22 +208,28 @@ impl CloudflareClient {
     fn get(&self, path: &str) -> Result<serde_json::Value, String> {
         self.rate_limit();
         let url = format!("{}{}", CF_API, path);
-        let resp = self.client.get(&url)
+        let resp = self
+            .client
+            .get(&url)
             .bearer_auth(&self.token)
             .send()
             .map_err(|e| format!("HTTP error: {}", e))?;
 
         let status = resp.status();
-        let body: serde_json::Value = resp.json()
+        let body: serde_json::Value = resp
+            .json()
             .map_err(|e| format!("JSON parse error: {}", e))?;
 
         if !status.is_success() {
-            let errors = body.get("errors")
+            let errors = body
+                .get("errors")
                 .and_then(|e| e.as_array())
-                .map(|arr| arr.iter()
-                    .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
-                    .collect::<Vec<_>>()
-                    .join(", "))
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
                 .unwrap_or_else(|| format!("HTTP {}", status));
             return Err(errors);
         }
@@ -233,23 +241,29 @@ impl CloudflareClient {
     fn post(&self, path: &str, body: &serde_json::Value) -> Result<serde_json::Value, String> {
         self.rate_limit();
         let url = format!("{}{}", CF_API, path);
-        let resp = self.client.post(&url)
+        let resp = self
+            .client
+            .post(&url)
             .bearer_auth(&self.token)
             .json(body)
             .send()
             .map_err(|e| format!("HTTP error: {}", e))?;
 
         let status = resp.status();
-        let response_body: serde_json::Value = resp.json()
+        let response_body: serde_json::Value = resp
+            .json()
             .map_err(|e| format!("JSON parse error: {}", e))?;
 
         if !status.is_success() {
-            let errors = response_body.get("errors")
+            let errors = response_body
+                .get("errors")
                 .and_then(|e| e.as_array())
-                .map(|arr| arr.iter()
-                    .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
-                    .collect::<Vec<_>>()
-                    .join(", "))
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
                 .unwrap_or_else(|| format!("HTTP {}", status));
             return Err(errors);
         }
@@ -261,23 +275,29 @@ impl CloudflareClient {
     fn patch(&self, path: &str, body: &serde_json::Value) -> Result<serde_json::Value, String> {
         self.rate_limit();
         let url = format!("{}{}", CF_API, path);
-        let resp = self.client.patch(&url)
+        let resp = self
+            .client
+            .patch(&url)
             .bearer_auth(&self.token)
             .json(body)
             .send()
             .map_err(|e| format!("HTTP error: {}", e))?;
 
         let status = resp.status();
-        let response_body: serde_json::Value = resp.json()
+        let response_body: serde_json::Value = resp
+            .json()
             .map_err(|e| format!("JSON parse error: {}", e))?;
 
         if !status.is_success() {
-            let errors = response_body.get("errors")
+            let errors = response_body
+                .get("errors")
                 .and_then(|e| e.as_array())
-                .map(|arr| arr.iter()
-                    .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
-                    .collect::<Vec<_>>()
-                    .join(", "))
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
                 .unwrap_or_else(|| format!("HTTP {}", status));
             return Err(errors);
         }
@@ -289,19 +309,24 @@ impl CloudflareClient {
     fn delete(&self, path: &str) -> Result<(), String> {
         self.rate_limit();
         let url = format!("{}{}", CF_API, path);
-        let resp = self.client.delete(&url)
+        let resp = self
+            .client
+            .delete(&url)
             .bearer_auth(&self.token)
             .send()
             .map_err(|e| format!("HTTP error: {}", e))?;
 
         if !resp.status().is_success() {
             let body: serde_json::Value = resp.json().unwrap_or_default();
-            let errors = body.get("errors")
+            let errors = body
+                .get("errors")
                 .and_then(|e| e.as_array())
-                .map(|arr| arr.iter()
-                    .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
-                    .collect::<Vec<_>>()
-                    .join(", "))
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|e| e.get("message").and_then(|m| m.as_str()))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
                 .unwrap_or_else(|| "Delete failed".to_string());
             return Err(errors);
         }
@@ -332,20 +357,22 @@ impl CloudflareClient {
 
         loop {
             let body = self.get(&format!("/zones?page={}&per_page=50", page))?;
-            let resp: CfResponse<Vec<CfZone>> = serde_json::from_value(body)
-                .map_err(|e| format!("Parse error: {}", e))?;
+            let resp: CfResponse<Vec<CfZone>> =
+                serde_json::from_value(body).map_err(|e| format!("Parse error: {}", e))?;
 
             if let Some(zones) = resp.result {
-                if zones.is_empty() { break; }
+                if zones.is_empty() {
+                    break;
+                }
                 all_zones.extend(zones);
             } else {
                 break;
             }
 
-            let total_pages = resp.result_info
-                .and_then(|ri| ri.total_pages)
-                .unwrap_or(1);
-            if page >= total_pages { break; }
+            let total_pages = resp.result_info.and_then(|ri| ri.total_pages).unwrap_or(1);
+            if page >= total_pages {
+                break;
+            }
             page += 1;
         }
 
@@ -356,8 +383,8 @@ impl CloudflareClient {
     /// Find a zone by domain name.
     pub fn find_zone_by_name(&self, name: &str) -> Result<CfZone, String> {
         let body = self.get(&format!("/zones?name={}", name))?;
-        let resp: CfResponse<Vec<CfZone>> = serde_json::from_value(body)
-            .map_err(|e| format!("Parse error: {}", e))?;
+        let resp: CfResponse<Vec<CfZone>> =
+            serde_json::from_value(body).map_err(|e| format!("Parse error: {}", e))?;
 
         resp.result
             .and_then(|zones| zones.into_iter().next())
@@ -371,10 +398,11 @@ impl CloudflareClient {
     /// Get all settings for a zone.
     pub fn get_zone_settings(&self, zone_id: &str) -> Result<Vec<CfSetting>, String> {
         let body = self.get(&format!("/zones/{}/settings", zone_id))?;
-        let resp: CfResponse<Vec<CfSetting>> = serde_json::from_value(body)
-            .map_err(|e| format!("Parse error: {}", e))?;
+        let resp: CfResponse<Vec<CfSetting>> =
+            serde_json::from_value(body).map_err(|e| format!("Parse error: {}", e))?;
 
-        resp.result.ok_or_else(|| "No settings in response".to_string())
+        resp.result
+            .ok_or_else(|| "No settings in response".to_string())
     }
 
     /// Apply hardening settings to a zone. Returns number of settings updated.
@@ -423,21 +451,26 @@ impl CloudflareClient {
         let mut page = 1u32;
 
         loop {
-            let body = self.get(&format!("/zones/{}/dns_records?page={}&per_page=100", zone_id, page))?;
-            let resp: CfResponse<Vec<CfDnsRecord>> = serde_json::from_value(body)
-                .map_err(|e| format!("Parse error: {}", e))?;
+            let body = self.get(&format!(
+                "/zones/{}/dns_records?page={}&per_page=100",
+                zone_id, page
+            ))?;
+            let resp: CfResponse<Vec<CfDnsRecord>> =
+                serde_json::from_value(body).map_err(|e| format!("Parse error: {}", e))?;
 
             if let Some(records) = resp.result {
-                if records.is_empty() { break; }
+                if records.is_empty() {
+                    break;
+                }
                 all_records.extend(records);
             } else {
                 break;
             }
 
-            let total_pages = resp.result_info
-                .and_then(|ri| ri.total_pages)
-                .unwrap_or(1);
-            if page >= total_pages { break; }
+            let total_pages = resp.result_info.and_then(|ri| ri.total_pages).unwrap_or(1);
+            if page >= total_pages {
+                break;
+            }
             page += 1;
         }
 
@@ -463,10 +496,11 @@ impl CloudflareClient {
         });
 
         let resp_body = self.post(&format!("/zones/{}/dns_records", zone_id), &body)?;
-        let resp: CfResponse<CfDnsRecord> = serde_json::from_value(resp_body)
-            .map_err(|e| format!("Parse error: {}", e))?;
+        let resp: CfResponse<CfDnsRecord> =
+            serde_json::from_value(resp_body).map_err(|e| format!("Parse error: {}", e))?;
 
-        resp.result.ok_or_else(|| "No record in response".to_string())
+        resp.result
+            .ok_or_else(|| "No record in response".to_string())
     }
 
     /// Delete a DNS record.
@@ -479,7 +513,11 @@ impl CloudflareClient {
     // ========================================================================
 
     /// Patch multiple zone settings at once.
-    pub fn patch_zone_settings(&self, zone_id: &str, body: &serde_json::Value) -> Result<(), String> {
+    pub fn patch_zone_settings(
+        &self,
+        zone_id: &str,
+        body: &serde_json::Value,
+    ) -> Result<(), String> {
         self.patch(&format!("/zones/{}/settings", zone_id), body)?;
         Ok(())
     }
@@ -493,8 +531,8 @@ impl CloudflareClient {
         // Try shorthand first, then fall back to looking up account ID.
         match self.get("/accounts/_/pages/projects") {
             Ok(body) => {
-                let resp: CfResponse<Vec<CfPagesProject>> = serde_json::from_value(body)
-                    .map_err(|e| format!("Parse error: {}", e))?;
+                let resp: CfResponse<Vec<CfPagesProject>> =
+                    serde_json::from_value(body).map_err(|e| format!("Parse error: {}", e))?;
                 Ok(resp.result.unwrap_or_default())
             }
             Err(_) => {
@@ -540,15 +578,18 @@ impl CloudflareClient {
             .join("cloudguard")
             .join("configs");
 
-        std::fs::create_dir_all(&dir)
-            .map_err(|e| format!("Failed to create config dir: {}", e))?;
+        std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
 
         let filename = domain.replace('.', "_");
         let path = dir.join(format!("{}.json", filename));
 
-        std::fs::write(&path, serde_json::to_string_pretty(&config)
-            .expect("serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)"))
-            .map_err(|e| format!("Failed to write config: {}", e))?;
+        std::fs::write(
+            &path,
+            serde_json::to_string_pretty(&config).expect(
+                "serializing a typed Rust value to JSON is infallible (no Serialize impl can fail)",
+            ),
+        )
+        .map_err(|e| format!("Failed to write config: {}", e))?;
 
         Ok(path.to_string_lossy().to_string())
     }
@@ -560,10 +601,7 @@ impl CloudflareClient {
 
 /// Audit a zone's settings against the hardening policy.
 /// Returns (passed_count, failed_count, findings).
-pub fn audit_settings(
-    domain: &str,
-    settings: &[CfSetting],
-) -> (usize, usize, Vec<AuditFinding>) {
+pub fn audit_settings(domain: &str, settings: &[CfSetting]) -> (usize, usize, Vec<AuditFinding>) {
     let mut passed = 0;
     let mut failed = 0;
     let mut findings = Vec::new();
@@ -574,7 +612,13 @@ pub fn audit_settings(
             Some(s) => {
                 let actual = match &s.value {
                     serde_json::Value::String(v) => v.clone(),
-                    serde_json::Value::Bool(b) => if *b { "on".to_string() } else { "off".to_string() },
+                    serde_json::Value::Bool(b) => {
+                        if *b {
+                            "on".to_string()
+                        } else {
+                            "off".to_string()
+                        }
+                    }
                     serde_json::Value::Number(n) => n.to_string(),
                     other => other.to_string(),
                 };
