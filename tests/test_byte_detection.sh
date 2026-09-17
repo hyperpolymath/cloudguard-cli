@@ -24,7 +24,7 @@ echo ""
 PASS=0
 FAIL=0
 
-# Test helper functions
+# Assert that a fixture contains the supplied grep-compatible pattern.
 test_should_match() {
     local desc="$1"
     local file="$2"
@@ -39,6 +39,7 @@ test_should_match() {
     fi
 }
 
+# Assert that a fixture does not contain the supplied grep-compatible pattern.
 test_should_not_match() {
     local desc="$1"
     local file="$2"
@@ -104,7 +105,7 @@ echo ""
 echo "Test Group 3: Mid-file Invisible Unicode (Advisory)"
 echo "────────────────────────────────────────────────────"
 
-# For PCRE patterns with Unicode, we need the -P flag
+# Assert that a fixture contains the supplied Unicode-aware PCRE pattern.
 test_should_match_pcre() {
     local desc="$1"
     local file="$2"
@@ -119,6 +120,7 @@ test_should_match_pcre() {
     fi
 }
 
+# Assert that a fixture does not contain the supplied Unicode-aware PCRE pattern.
 test_should_not_match_pcre() {
     local desc="$1"
     local file="$2"
